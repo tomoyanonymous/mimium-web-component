@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mimium webcomponent test</title>
+</head>
+<body>
+    <h1>mimium web build</h1>
+
+<pre id ="src">
+    fn dsp(){
+        let time = now * 440.0 / samplerate
+        let nphase = time % 1.0 
+        sin(nphase*6.2831853)
+    }
+</pre>
+
+<button id = "button">Play</button>
+<script type="module" src="/src/index.ts"></script>
+</body>
+</html>

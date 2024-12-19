@@ -1,0 +1,21 @@
+{
+  "name": "mimium-web-component",
+  "version": "1.0.0",
+  "description": "mimium editor web component",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Tomoya Matsuura",
+  "license": "MPL-2.0",
+  "dependencies": {
+    "mimium-web": "file:../mimium-rs/mimium-web/pkg"
+  },
+  "devDependencies": {
+    "@types/audioworklet": "^0.0.65",
+    "@types/mimium-web": "file:../mimium-rs/mimium-web/pkg",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}
