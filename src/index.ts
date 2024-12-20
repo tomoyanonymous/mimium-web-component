@@ -14,7 +14,7 @@ const setupAudioWorklet = async (src: string) => {
   let audioNode;
   const audioContext = new AudioContext({ latencyHint: "interactive" });
   try {
-    const response =  await window.fetch(wasmurl);
+    const response = await window.fetch(wasmurl);
     const wasmBytes = await response.arrayBuffer();
     try {
       await audioContext.audioWorklet.addModule(MimiumProcessor);
@@ -28,12 +28,13 @@ const setupAudioWorklet = async (src: string) => {
     audioNode.init(wasmBytes, {
       src: src,
       samplerate: audioContext.sampleRate,
-      buffersize: 2048,
+      buffersize: 128,//AudioWorklet Always uses 128 for now
     } as CompileData);
     audioContext.resume();
     const microphone = await audioContext.createMediaStreamSource(userMedia);
 
     microphone.connect(audioNode).connect(audioContext.destination);
+    return { node: audioNode, context: audioContext };
   } catch (e) {
     let err = e as unknown as Error;
     throw new Error(
@@ -42,13 +43,25 @@ const setupAudioWorklet = async (src: string) => {
   }
 };
 
+let g_node: any = undefined;
+let g_context: AudioContext | null = null;
 const main = async (src: string) => {
-  setupAudioWorklet(src);
+  let { node, context } = await setupAudioWorklet(src);
+  g_node = node;
+  g_context = context;
 };
 document.addEventListener("DOMContentLoaded", () => {
-  const button = document.querySelector("#button") as HTMLButtonElement;
-  const src = document.querySelector("#src")?.textContent as string;
+  const button = document.querySelector("#play_button") as HTMLButtonElement;
+  const stopbutton = document.querySelector("#stop_button") as HTMLButtonElement;
+
   button.addEventListener("click", async () => {
+    const textarea = document.querySelector("#src") as HTMLTextAreaElement;
+    const src = textarea.value;
     main(src);
   });
+  stopbutton.addEventListener("click", async () => {
+    if (g_context) {
+      g_context.close();
+    }
+  })
 });

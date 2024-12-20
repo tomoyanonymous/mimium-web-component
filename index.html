@@ -7,18 +7,19 @@
 </head>
 <body>
     <h1>mimium web build</h1>
+    <textarea id="src" name="message" rows="10" cols="50">
+fn counter(){
+    (self+440/48000)%1.0
+}
+fn dsp(){
+    let phase = counter()
+    sin(phase*6.2831853)
+}
+    </textarea>
 
-<pre id ="src">
-    fn counter(){
-        (self+440/48000)%1.0
-    }
-    fn dsp(){
-        let phase = counter()
-        sin(phase*6.2831853)
-    }
-</pre>
+<button id = "play_button">Play</button>
+<button id = "stop_button">Stop</button>
 
-<button id = "button">Play</button>
 <script type="module" src="/src/index.ts"></script>
 </body>
 </html>
