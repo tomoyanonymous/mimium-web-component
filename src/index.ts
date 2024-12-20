@@ -11,8 +11,8 @@ const setupAudioWorklet = async (src: string) => {
   const audioContext = new AudioContext();
   audioContext.resume();
   const microphone = await audioContext.createMediaStreamSource(userMedia);
-  await audioContext.audioWorklet.addModule("./audioprocessor.js");
-  const audioNode = new AudioWorkletNode(audioContext, "MimiumAudioProcessor");
+  await audioContext.audioWorklet.addModule(MimiumProcessor);
+  const audioNode = new AudioWorkletNode(audioContext, "MimiumProcessor");
   audioNode.port.postMessage({
     type: "compile",
     src: src,

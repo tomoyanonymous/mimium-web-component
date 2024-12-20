@@ -1,20 +1,22 @@
-import { Context, Config } from "mimium-web";
+import init,{ Context, Config } from "mimium-web";
 
 export class MimiumProcessor extends AudioWorkletProcessor {
   context: Context | null;
 
-  constructor() {
+    constructor() {
     super();
     this.context = null;
-    this.port.onmessage = (e) => {
+    this.port.onmessage = async (e) => {
       switch (e.data.type) {
         case "compile":
-          this.compile(e.data.samplerate, e.data.buffersize, e.data.src);
+          await this.compile(e.data.samplerate, e.data.buffersize, e.data.src);
           break;
       }
     };
   }
-  public compile(samplerate: number, buffersize: number, src: string) {
+  public async compile(samplerate: number, buffersize: number, src: string) {
+    await init();
+
     let config = new Config();
     config.sample_rate = samplerate;
     config.output_channels = 1;

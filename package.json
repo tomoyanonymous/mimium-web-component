@@ -10,11 +10,14 @@
   "author": "Tomoya Matsuura",
   "license": "MPL-2.0",
   "dependencies": {
-    "mimium-web": "file:../mimium-rs/mimium-web/pkg"
+    "mimium-web": "file:../mimium-rs/mimium-web/pkg",
+    "vite-plugin-top-level-await": "^1.4.4",
+    "vite-plugin-wasm": "^3.4.1"
   },
   "devDependencies": {
     "@types/audioworklet": "^0.0.65",
     "@types/mimium-web": "file:../mimium-rs/mimium-web/pkg",
+    "@types/node": "^22.10.2",
     "typescript": "^5.7.2",
     "vite": "^6.0.3"
   }
