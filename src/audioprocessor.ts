@@ -1,22 +1,42 @@
-import init,{ Context, Config } from "mimium-web";
+import "./textencoder.js";
+
+import init, { Context, Config } from "mimium-web";
 
 export class MimiumProcessor extends AudioWorkletProcessor {
   context: Context | null;
 
-    constructor() {
+  constructor() {
     super();
     this.context = null;
-    this.port.onmessage = async (e) => {
-      switch (e.data.type) {
-        case "compile":
-          await this.compile(e.data.samplerate, e.data.buffersize, e.data.src);
-          break;
-      }
+    this.port.onmessage = (event) => {
+      this.onmessage(event.data);
     };
   }
-  public async compile(samplerate: number, buffersize: number, src: string) {
-    await init();
-
+  onmessage(event: MessageEvent<any>) {
+    switch (event.type) {
+      case "send-wasm-module": {
+        this.port.postMessage("start_loading");
+        const wasmBinary = event.data; //this is invalid conversion for workaround.
+        const wasm = WebAssembly.compile(wasmBinary);
+        init(wasm)
+          .then(() => {
+            console.log("wasm module loaded");
+            this.port.postMessage({ type: "wasm-module-loaded" });
+          })
+          .catch((e) => {
+            this.port.postMessage({ type: "error_wasm_load", data: e });
+          });
+      }
+      case "compile":
+        this.compile(
+          event.data.samplerate,
+          event.data.buffersize,
+          event.data.src
+        );
+        break;
+    }
+  }
+  public compile(samplerate: number, buffersize: number, src: string) {
     let config = new Config();
     config.sample_rate = samplerate;
     config.output_channels = 1;
@@ -36,4 +56,5 @@ export class MimiumProcessor extends AudioWorkletProcessor {
     return true;
   }
 }
-registerProcessor("MimiumProcessor",MimiumProcessor);
+
+registerProcessor("MimiumProcessor", MimiumProcessor);

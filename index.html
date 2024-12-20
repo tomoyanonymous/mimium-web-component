@@ -9,10 +9,12 @@
     <h1>mimium web build</h1>
 
 <pre id ="src">
+    fn counter(){
+        (self+440/48000)%1.0
+    }
     fn dsp(){
-        let time = now * 440.0 / samplerate
-        let nphase = time % 1.0 
-        sin(nphase*6.2831853)
+        let phase = counter()
+        sin(phase*6.2831853)
     }
 </pre>
 

@@ -1,5 +1,8 @@
 import Worker from "./worker.ts?worker";
-import MimiumProcessor from "./audioprocessor.js?url";
+import MimiumProcessor from "./audioprocessor.js?worker&url";
+import { MimiumProcessorNode, CompileData } from "./workletnode";
+import wasmurl from "mimium-web/mimium_web_bg.wasm?url";
+
 // const processorBlob = new Blob([workletURL], { type: "text/javascript" });
 // const processorUrl = URL.createObjectURL(processorBlob);
 
@@ -8,19 +11,35 @@ const setupAudioWorklet = async (src: string) => {
     audio: true,
     video: false,
   });
-  const audioContext = new AudioContext();
-  audioContext.resume();
-  const microphone = await audioContext.createMediaStreamSource(userMedia);
-  await audioContext.audioWorklet.addModule(MimiumProcessor);
-  const audioNode = new AudioWorkletNode(audioContext, "MimiumProcessor");
-  audioNode.port.postMessage({
-    type: "compile",
-    src: src,
-    samplerate: audioContext.sampleRate,
-    buffersize: audioContext.outputLatency,
-  });
+  let audioNode;
+  const audioContext = new AudioContext({ latencyHint: "interactive" });
+  try {
+    const response =  await window.fetch(wasmurl);
+    const wasmBytes = await response.arrayBuffer();
+    try {
+      await audioContext.audioWorklet.addModule(MimiumProcessor);
+    } catch (e) {
+      let err = e as unknown as Error;
+      throw new Error(
+        `Failed to load audio analyzer worklet at url: ${MimiumProcessor}. Further info: ${err.message}`
+      );
+    }
+    audioNode = new MimiumProcessorNode(audioContext, "MimiumProcessor");
+    audioNode.init(wasmBytes, {
+      src: src,
+      samplerate: audioContext.sampleRate,
+      buffersize: 2048,
+    } as CompileData);
+    audioContext.resume();
+    const microphone = await audioContext.createMediaStreamSource(userMedia);
 
-  microphone.connect(audioNode).connect(audioContext.destination);
+    microphone.connect(audioNode).connect(audioContext.destination);
+  } catch (e) {
+    let err = e as unknown as Error;
+    throw new Error(
+      `Failed to load audio analyzer WASM module. Further info: ${err.message}`
+    );
+  }
 };
 
 const main = async (src: string) => {
