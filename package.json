@@ -9,10 +9,9 @@
   },
   "author": "Tomoya Matsuura",
   "license": "MPL-2.0",
-  "dependencies": {
-    "@mimium/mimium-webaudio": "^1.0.7"
-  },
+  "dependencies": {},
   "devDependencies": {
+    "@mimium/mimium-webaudio": "^1.0.8",
     "@types/audioworklet": "^0.0.65",
     "@types/node": "^22.10.2",
     "typescript": "^5.7.2",
