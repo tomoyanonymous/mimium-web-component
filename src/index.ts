@@ -1,5 +1,5 @@
 import {
-  setupAudioWorklet,
+  setupMimiumAudioWorklet,
   MimiumProcessorNode,
 } from "@mimium/mimium-webaudio";
 import MimiumProcessorUrl from "../node_modules/@mimium/mimium-webaudio/dist/audioprocessor.mjs?url";
@@ -9,9 +9,16 @@ import MimiumProcessorUrl from "../node_modules/@mimium/mimium-webaudio/dist/aud
 let g_node: any = undefined;
 let g_context: AudioContext | null = null;
 export const main = async (src: string) => {
-  let { node, context } = await setupAudioWorklet(src, MimiumProcessorUrl);
-  g_node = node;
-  g_context = context;
+  let ctx = new AudioContext();
+  let mimiumnode = await setupMimiumAudioWorklet(ctx, src, MimiumProcessorUrl);
+  const usermedia = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const microphone = ctx.createMediaStreamSource(usermedia);
+  if (mimiumnode.numberOfInputs > 0) {
+    microphone.connect(mimiumnode); 
+  }
+  mimiumnode.connect(ctx.destination);
+  g_node = mimiumnode;
+  g_context = ctx;
 };
 document.addEventListener("DOMContentLoaded", () => {
   const button = document.querySelector("#play_button") as HTMLButtonElement;
