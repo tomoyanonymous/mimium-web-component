@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
   ) as HTMLButtonElement;
   updatebutton.setAttribute("disabled", "");
   button.addEventListener("click", async () => {
-    if (!g_context) {
+    if (!g_context || !g_node) {
       const textarea = document.querySelector("#src") as HTMLTextAreaElement;
       const src = textarea.value;
       updatebutton.removeAttribute("disabled");
