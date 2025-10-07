@@ -40,6 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
   stopbutton.addEventListener("click", async () => {
     if (g_context) {
       g_context.close();
+      g_context=null;
       updatebutton.setAttribute("disabled", "");
     }
   });
