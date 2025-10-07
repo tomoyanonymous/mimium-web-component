@@ -6,7 +6,7 @@ import MimiumProcessorUrl from "../node_modules/@mimium/mimium-webaudio/dist/aud
 // const processorBlob = new Blob([workletURL], { type: "text/javascript" });
 // const processorUrl = URL.createObjectURL(processorBlob);
 
-let g_node: any = undefined;
+let g_node: MimiumProcessorNode | null = null;
 let g_context: AudioContext | null = null;
 export const main = async (src: string) => {
   let ctx = new AudioContext();
@@ -14,7 +14,7 @@ export const main = async (src: string) => {
   const usermedia = await navigator.mediaDevices.getUserMedia({ audio: true });
   const microphone = ctx.createMediaStreamSource(usermedia);
   if (mimiumnode.numberOfInputs > 0) {
-    microphone.connect(mimiumnode); 
+    microphone.connect(mimiumnode);
   }
   mimiumnode.connect(ctx.destination);
   g_node = mimiumnode;
@@ -25,15 +25,29 @@ document.addEventListener("DOMContentLoaded", () => {
   const stopbutton = document.querySelector(
     "#stop_button"
   ) as HTMLButtonElement;
-
+  const updatebutton = document.querySelector(
+    "#update_button"
+  ) as HTMLButtonElement;
+  updatebutton.setAttribute("disabled", "");
   button.addEventListener("click", async () => {
-    const textarea = document.querySelector("#src") as HTMLTextAreaElement;
-    const src = textarea.value;
-    main(src);
+    if (!g_context) {
+      const textarea = document.querySelector("#src") as HTMLTextAreaElement;
+      const src = textarea.value;
+      updatebutton.removeAttribute("disabled");
+      main(src);
+    }
   });
   stopbutton.addEventListener("click", async () => {
     if (g_context) {
       g_context.close();
+      updatebutton.setAttribute("disabled", "");
+    }
+  });
+  updatebutton.addEventListener("click", async () => {
+    if (g_node) {
+      const textarea = document.querySelector("#src") as HTMLTextAreaElement;
+      const src = textarea.value;
+      g_node.port.postMessage({ type: "recompile", data: { src: src } });
     }
   });
 });

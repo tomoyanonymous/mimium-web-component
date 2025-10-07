@@ -1,6 +1,6 @@
 {
   "name": "mimium-web-component",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "mimium editor web component",
   "main": "index.js",
   "type": "module",
@@ -11,7 +11,7 @@
   "license": "MPL-2.0",
   "dependencies": {},
   "devDependencies": {
-    "@mimium/mimium-webaudio": "^1.0.8",
+    "@mimium/mimium-webaudio": "^2.0.0",
     "@types/audioworklet": "^0.0.65",
     "@types/node": "^22.10.2",
     "typescript": "^5.7.2",
