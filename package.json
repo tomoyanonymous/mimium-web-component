@@ -1,13 +1,14 @@
 {
   "name": "mimium-web-component",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "mimium editor web component",
   "type": "module",
   "main": "./dist/mimium-web-component.js",
   "module": "./dist/mimium-web-component.js",
   "types": "./dist/index.d.ts",
   "repository": {
-    "url": "https://github.com/tomoyanonymous/mimium-web-component.git"
+    "type": "git",
+    "url": "git://github.com/tomoyanonymous/mimium-web-component.git"
   },
   "exports": {
     ".": {
