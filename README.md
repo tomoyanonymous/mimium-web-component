@@ -81,6 +81,30 @@ pnpm build    # build to dist/
 pnpm preview  # preview the built output
 ```
 
+## Publishing
+
+Releases are published to npm via GitHub Actions using **npm provenance** (trusted publishing).  
+`--provenance` links each published package to the exact GitHub Actions run and commit.
+
+### One-time setup
+
+1. Create an **npm Automation token** on [npmjs.com](https://npmjs.com) (Account → Access Tokens → Generate New Token → Automation).
+2. Add it as a secret named **`NPM_TOKEN`** in the GitHub repository (Settings → Secrets and variables → Actions).
+
+### Release workflow
+
+Tag a commit with a version tag and push — the workflow runs automatically:
+
+```sh
+git tag v2.1.0
+git push origin v2.1.0
+```
+
+The [publish workflow](.github/workflows/publish.yml) will:
+1. Install dependencies with `pnpm --frozen-lockfile`
+2. Build with `pnpm build`
+3. Publish with `pnpm publish --provenance` (adds a signed provenance attestation)
+
 ## Architecture
 
 | File | Role |
