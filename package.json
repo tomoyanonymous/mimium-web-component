@@ -1,6 +1,6 @@
 {
   "name": "mimium-web-component",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "description": "mimium editor web component",
   "type": "module",
   "main": "./dist/mimium-web-component.js",

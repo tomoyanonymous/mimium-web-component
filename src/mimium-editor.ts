@@ -44,7 +44,7 @@ fn dsp(){
 }`;
 
 const STYLES = `
-:host {
+mimium-editor {
   display: block;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --mimium-bg: #1E1E2E;
@@ -178,24 +178,6 @@ const STYLES = `
   overflow: hidden;
 }
 
-/* -------------------------------------------------------
- * Monaco Editor: Shadow DOM compatibility overrides
- * Monaco injects CSS into document.head; we override
- * the most critical rules inline here as a fallback.
- * ------------------------------------------------------- */
-
-/* Hide Monaco's internal IME textarea (it should be off-screen / invisible) */
-.inputarea.monaco-mouse-cursor-text {
-  opacity: 0 !important;
-  position: absolute !important;
-  left: -100% !important;
-  top: 0 !important;
-  width: 1px !important;
-  height: 1px !important;
-  overflow: hidden !important;
-  pointer-events: none !important;
-}
-
 .mimium-status {
   display: flex;
   align-items: center;
@@ -244,8 +226,21 @@ const STYLES = `
  *     }
  *   </mimium-editor>
  */
+// Inject component styles into document.head once (light DOM approach).
+// Shadow DOM cannot be used with Monaco because Monaco injects its own
+// CSS into document.head; those styles don't cross the shadow boundary,
+// causing the textarea/cursor to be mispositioned.
+let componentStylesInjected = false;
+function injectComponentStyles() {
+  if (componentStylesInjected) return;
+  componentStylesInjected = true;
+  const style = document.createElement("style");
+  style.setAttribute("data-mimium-component", "true");
+  style.textContent = STYLES;
+  document.head.appendChild(style);
+}
+
 export class MimiumEditorElement extends HTMLElement {
-  private shadow: ShadowRoot;
   private editorContainer: HTMLDivElement | null = null;
   private monacoEditor: monaco.editor.IStandaloneCodeEditor | null = null;
   private audioContext: AudioContext | null = null;
@@ -257,7 +252,7 @@ export class MimiumEditorElement extends HTMLElement {
   private statusDot: HTMLDivElement | null = null;
   private statusText: HTMLSpanElement | null = null;
   private labelEl: HTMLSpanElement | null = null;
-  private styleObserver: MutationObserver | null = null;
+  private _initialCode: string | null = null;
   private _isPlaying = false;
 
   static get observedAttributes() {
@@ -266,10 +261,12 @@ export class MimiumEditorElement extends HTMLElement {
 
   constructor() {
     super();
-    this.shadow = this.attachShadow({ mode: "open" });
+    // Capture text content before render() clears it
+    this._initialCode = this.textContent?.trim() || null;
   }
 
   connectedCallback() {
+    injectComponentStyles();
     ensureLanguageRegistered();
     this.render();
     this.setupEditor();
@@ -277,8 +274,6 @@ export class MimiumEditorElement extends HTMLElement {
 
   disconnectedCallback() {
     this.stopAudio();
-    this.styleObserver?.disconnect();
-    this.styleObserver = null;
     if (this.monacoEditor) {
       this.monacoEditor.dispose();
       this.monacoEditor = null;
@@ -322,17 +317,16 @@ export class MimiumEditorElement extends HTMLElement {
     const srcAttr = this.getAttribute("src");
     if (srcAttr) return srcAttr;
 
-    // 2. Check text content (code written inside the tag)
-    const textContent = this.textContent?.trim();
-    if (textContent) return textContent;
+    // 2. Use text content captured before render() overwrote innerHTML
+    if (this._initialCode) return this._initialCode;
 
     // 3. Fallback
     return DEFAULT_CODE;
   }
 
   private render() {
-    const style = document.createElement("style");
-    style.textContent = STYLES;
+    // Clear light DOM content (original text node used as initial code)
+    this.innerHTML = "";
 
     const container = document.createElement("div");
     container.className = "mimium-container";
@@ -402,42 +396,7 @@ export class MimiumEditorElement extends HTMLElement {
     container.appendChild(this.editorContainer);
     container.appendChild(statusBar);
 
-    this.shadow.appendChild(style);
-    this.shadow.appendChild(container);
-  }
-
-  /**
-   * Copy Monaco Editor's injected styles from document.head into the
-   * Shadow Root so that they apply to elements inside the shadow DOM.
-   * Monaco injects <style> tags into the host document; these don't
-   * pierce the shadow boundary, so we clone them here.
-   */
-  private syncMonacoStylesToShadow() {
-    const cloneStyle = (node: Node) => {
-      if (!(node instanceof HTMLStyleElement)) return;
-      // Avoid duplicates
-      const already = Array.from(this.shadow.querySelectorAll(
-        "style[data-mimium-monaco-copy]"
-      ));
-      const text = node.textContent || "";
-      for (const s of already) {
-        if (s.textContent === text) return;
-      }
-      const clone = node.cloneNode(true) as HTMLStyleElement;
-      clone.setAttribute("data-mimium-monaco-copy", "true");
-      this.shadow.appendChild(clone);
-    };
-
-    // Copy already-existing styles
-    document.head.querySelectorAll("style").forEach(cloneStyle);
-
-    // Watch for new styles Monaco injects lazily
-    this.styleObserver = new MutationObserver((mutations) => {
-      for (const m of mutations) {
-        m.addedNodes.forEach(cloneStyle);
-      }
-    });
-    this.styleObserver.observe(document.head, { childList: true });
+    this.appendChild(container);
   }
 
   private setupEditor() {
@@ -466,8 +425,6 @@ export class MimiumEditorElement extends HTMLElement {
       },
     });
 
-    // Sync Monaco's injected styles into Shadow DOM
-    this.syncMonacoStylesToShadow();
   }
 
   private setStatus(text: string, playing: boolean) {

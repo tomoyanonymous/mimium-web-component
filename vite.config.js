@@ -13,7 +13,7 @@ export default defineConfig({
   ],
   assetsInclude: ["node_modules/@mimium/mimium-webaudio/dist/assets/**"],
   build: {
-    minify: false,
+    minify: true,
     lib: {
       entry: resolve(__dirname, "src/index.ts"),
       name: "mimium_web_component",
