@@ -6,6 +6,9 @@
   "main": "./dist/mimium-web-component.js",
   "module": "./dist/mimium-web-component.js",
   "types": "./dist/index.d.ts",
+  "repository": {
+    "url": "https://github.com/tomoyanonymous/mimium-web-component.git"
+  },
   "exports": {
     ".": {
       "import": "./dist/mimium-web-component.js",
