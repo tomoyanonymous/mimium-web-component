@@ -5,6 +5,7 @@ import dts from "vite-plugin-dts";
 import checker from "vite-plugin-checker";
 
 export default defineConfig({
+  base: "./",
   plugins: [
     topLevelAwait(),
     dts({ tsconfigPath: "./tsconfig.json" }),

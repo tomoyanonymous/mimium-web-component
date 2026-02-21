@@ -13,13 +13,15 @@ import {
 
 // Monaco Editor worker setup
 // Workers are needed for Monaco to function properly
+// Use getWorker (not getWorkerUrl) so we can specify type:'module', which is
+// required by Monaco 0.44+ when the host page loads the bundle as an ES module.
+// importScripts() is forbidden inside module workers.
 self.MonacoEnvironment = {
-  getWorkerUrl(_moduleId: string, _label: string) {
-    // For languages that don't need special workers, use the editor worker
-    return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
-      self.MonacoEnvironment = { baseUrl: '${location.origin}' };
-      importScripts('${new URL("monaco-editor/esm/vs/editor/editor.worker.js", import.meta.url).href}');
-    `)}`;
+  getWorker(_moduleId: string, _label: string) {
+    return new Worker(
+      new URL("monaco-editor/esm/vs/editor/editor.worker.js", import.meta.url),
+      { type: "module" }
+    );
   },
 };
 
