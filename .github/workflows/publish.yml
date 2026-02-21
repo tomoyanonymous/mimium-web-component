@@ -14,6 +14,8 @@ jobs:
     environment: production
     runs-on: ubuntu-latest
     steps:
+      - name: Clear auth token for OIDC
+        run: echo "NODE_AUTH_TOKEN=" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
