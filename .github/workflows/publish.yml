@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write  # Required for npm OIDC trusted publishing (provenance)
+  id-token: write  # Required for npm OIDC trusted publishing (no stored token needed)
 
 jobs:
   publish:
@@ -33,5 +33,5 @@ jobs:
 
       - name: Publish
         run: pnpm publish --provenance --no-git-checks --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # NODE_AUTH_TOKEN is NOT needed — npm CLI uses the GitHub OIDC token directly.
+        # Requires the package to have a trusted publisher configured on npmjs.com.

@@ -83,13 +83,19 @@ pnpm preview  # preview the built output
 
 ## Publishing
 
-Releases are published to npm via GitHub Actions using **npm provenance** (trusted publishing).  
-`--provenance` links each published package to the exact GitHub Actions run and commit.
+Releases are published to npm via GitHub Actions using **npm OIDC trusted publishing**.  
+No npm token is stored as a GitHub secret — npm exchanges the GitHub Actions OIDC token directly.
 
-### One-time setup
+### One-time setup on npmjs.com
 
-1. Create an **npm Automation token** on [npmjs.com](https://npmjs.com) (Account → Access Tokens → Generate New Token → Automation).
-2. Add it as a secret named **`NPM_TOKEN`** in the GitHub repository (Settings → Secrets and variables → Actions).
+1. Open the package page on [npmjs.com](https://www.npmjs.com) and go to **Publishing access**.
+2. Under **Trusted publishers**, click **Add a publisher** and fill in:
+   - **Owner**: `tomoyanonymous`
+   - **Repository**: `mimium-web-component`
+   - **Workflow**: `publish.yml`
+   - **Environment**: *(leave blank)*
+
+That's it — no `NPM_TOKEN` secret required.
 
 ### Release workflow
 
@@ -103,7 +109,7 @@ git push origin v2.1.0
 The [publish workflow](.github/workflows/publish.yml) will:
 1. Install dependencies with `pnpm --frozen-lockfile`
 2. Build with `pnpm build`
-3. Publish with `pnpm publish --provenance` (adds a signed provenance attestation)
+3. Publish with `pnpm publish --provenance` — npm verifies the OIDC token and attaches a signed provenance attestation to the package
 
 ## Architecture
 
