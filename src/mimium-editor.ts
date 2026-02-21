@@ -178,6 +178,20 @@ mimium-editor {
   overflow: hidden;
 }
 
+/* Reset host-site textarea styles that would break Monaco's internal textareas */
+mimium-editor textarea {
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  resize: none !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
 .mimium-status {
   display: flex;
   align-items: center;

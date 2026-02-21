@@ -1,6 +1,6 @@
 {
   "name": "mimium-web-component",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "description": "mimium editor web component",
   "type": "module",
   "main": "./dist/mimium-web-component.js",
@@ -39,6 +39,7 @@
     "typescript": "^5.7.2",
     "vite": "^6.0.3",
     "vite-plugin-checker": "^0.8.0",
+    "vite-plugin-css-injected-by-js": "^3.5.2",
     "vite-plugin-dts": "^4.4.0",
     "vite-plugin-top-level-await": "^1.4.4"
   }

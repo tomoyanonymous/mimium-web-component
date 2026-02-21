@@ -33,6 +33,9 @@ importers:
       vite-plugin-checker:
         specifier: ^0.8.0
         version: 0.8.0(typescript@5.7.2)(vite@6.0.5(@types/node@22.10.2))
+      vite-plugin-css-injected-by-js:
+        specifier: ^3.5.2
+        version: 3.5.2(vite@6.0.5(@types/node@22.10.2))
       vite-plugin-dts:
         specifier: ^4.4.0
         version: 4.4.0(@types/node@22.10.2)(rollup@4.29.1)(typescript@5.7.2)(vite@6.0.5(@types/node@22.10.2))
@@ -962,6 +965,11 @@ packages:
       vue-tsc:
         optional: true
 
+  vite-plugin-css-injected-by-js@3.5.2:
+    resolution: {integrity: sha512-2MpU/Y+SCZyWUB6ua3HbJCrgnF0KACAsmzOQt1UvRVJCGF6S8xdA3ZUhWcWdM9ivG4I5az8PnQmwwrkC2CAQrQ==}
+    peerDependencies:
+      vite: '>2.0.0-0'
+
   vite-plugin-dts@4.4.0:
     resolution: {integrity: sha512-CJ6phvnnPLF+aFk8Jz2ZcMBLleJ4gKJOXb9We5Kzmsp5bPuD+uMDeVefjFNYSXZ+wdcqnf+Yp2P7oA5hBKQTlQ==}
     engines: {node: ^14.18.0 || >=16.0.0}
@@ -1849,6 +1857,10 @@ snapshots:
       vscode-uri: 3.0.8
     optionalDependencies:
       typescript: 5.7.2
+
+  vite-plugin-css-injected-by-js@3.5.2(vite@6.0.5(@types/node@22.10.2)):
+    dependencies:
+      vite: 6.0.5(@types/node@22.10.2)
 
   vite-plugin-dts@4.4.0(@types/node@22.10.2)(rollup@4.29.1)(typescript@5.7.2)(vite@6.0.5(@types/node@22.10.2)):
     dependencies:
