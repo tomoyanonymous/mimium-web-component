@@ -41,6 +41,9 @@ build/Release
 node_modules/
 jspm_packages/
 
+# npm lockfile (using pnpm)
+package-lock.json
+
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
 
@@ -121,3 +124,5 @@ dist
 # Temporary folders
 tmp/
 temp/
+
+.playwright-mcp

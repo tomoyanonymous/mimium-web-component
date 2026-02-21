@@ -5,13 +5,20 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Tomoya Matsuura",
   "license": "MPL-2.0",
-  "dependencies": {},
+  "packageManager": "pnpm@10.17.0",
+  "dependencies": {
+    "monaco-editor": "^0.55.1"
+  },
   "devDependencies": {
     "@mimium/mimium-webaudio": "^2.0.0",
+    "@playwright/test": "^1.58.2",
     "@types/audioworklet": "^0.0.65",
     "@types/node": "^22.10.2",
     "typescript": "^5.7.2",
