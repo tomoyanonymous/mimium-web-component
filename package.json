@@ -32,7 +32,7 @@
     "monaco-editor": "^0.55.1"
   },
   "devDependencies": {
-    "@mimium/mimium-webaudio": "^4.0.0",
+    "@mimium/mimium-webaudio": "4.0.0-alpha.1",
     "@playwright/test": "^1.58.2",
     "@types/audioworklet": "^0.0.65",
     "@types/node": "^22.19.13",
