@@ -1,6 +1,6 @@
 {
   "name": "mimium-web-component",
-  "version": "3.0.4",
+  "version": "4.0.0",
   "description": "mimium editor web component",
   "type": "module",
   "main": "./dist/mimium-web-component.js",
@@ -32,15 +32,15 @@
     "monaco-editor": "^0.55.1"
   },
   "devDependencies": {
-    "@mimium/mimium-webaudio": "^2.0.0",
+    "@mimium/mimium-webaudio": "^4.0.0",
     "@playwright/test": "^1.58.2",
     "@types/audioworklet": "^0.0.65",
-    "@types/node": "^22.10.2",
-    "typescript": "^5.7.2",
-    "vite": "^6.0.3",
+    "@types/node": "^22.19.13",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.1",
     "vite-plugin-checker": "^0.8.0",
     "vite-plugin-css-injected-by-js": "^3.5.2",
-    "vite-plugin-dts": "^4.4.0",
-    "vite-plugin-top-level-await": "^1.4.4"
+    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-top-level-await": "^1.6.0"
   }
 }
