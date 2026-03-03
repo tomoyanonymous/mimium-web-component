@@ -1,5 +1,7 @@
 import type { MimiumProcessorNode } from "@mimium/mimium-webaudio";
 import MimiumProcessorUrl from "../node_modules/@mimium/mimium-webaudio/dist/audioprocessor.mjs?url";
+import MimiumTextEncoderUrl from "../node_modules/@mimium/mimium-webaudio/dist/textencoder-B0AgIAQT.js?url";
+import MimiumWebRuntimeUrl from "../node_modules/@mimium/mimium-webaudio/dist/mimium_web-DPSIpWn3.js?url";
 import MimiumLogoUrl from "../mimium_logo_slant.svg?url";
 import * as monaco from "monaco-editor";
 import {
@@ -268,6 +270,8 @@ function injectComponentStyles() {
 }
 
 export class MimiumEditorElement extends HTMLElement {
+  private resolvedProcessorModuleUrl: string | null = null;
+  private resolvedProcessorModuleBlobUrl: string | null = null;
   private mimiumWebAudioModule: {
     setupMimiumAudioWorklet: (
       ctx: AudioContext,
@@ -312,6 +316,11 @@ export class MimiumEditorElement extends HTMLElement {
 
   disconnectedCallback() {
     this.stopAudio();
+    if (this.resolvedProcessorModuleBlobUrl) {
+      URL.revokeObjectURL(this.resolvedProcessorModuleBlobUrl);
+      this.resolvedProcessorModuleBlobUrl = null;
+    }
+    this.resolvedProcessorModuleUrl = null;
     if (this.monacoEditor) {
       this.monacoEditor.dispose();
       this.monacoEditor = null;
@@ -522,6 +531,34 @@ export class MimiumEditorElement extends HTMLElement {
     };
   }
 
+  private getResolvedProcessorModuleUrl(): string {
+    if (this.resolvedProcessorModuleUrl) return this.resolvedProcessorModuleUrl;
+
+    if (!MimiumProcessorUrl.startsWith("data:text/javascript")) {
+      this.resolvedProcessorModuleUrl = MimiumProcessorUrl;
+      return MimiumProcessorUrl;
+    }
+
+    const commaIndex = MimiumProcessorUrl.indexOf(",");
+    const encoded = commaIndex >= 0 ? MimiumProcessorUrl.slice(commaIndex + 1) : "";
+    const source = atob(encoded);
+    const rewritten = source
+      .replace(
+        /import\s+"\.\/textencoder-[^"]+\.js";?/,
+        `import "${MimiumTextEncoderUrl}";`,
+      )
+      .replace(
+        /from\s+"\.\/mimium_web-[^"]+\.js"/g,
+        `from "${MimiumWebRuntimeUrl}"`,
+      );
+
+    const blob = new Blob([rewritten], { type: "text/javascript" });
+    const blobUrl = URL.createObjectURL(blob);
+    this.resolvedProcessorModuleBlobUrl = blobUrl;
+    this.resolvedProcessorModuleUrl = blobUrl;
+    return blobUrl;
+  }
+
   private async loadMimiumWebAudioModule() {
     if (this.mimiumWebAudioModule) return this.mimiumWebAudioModule;
 
@@ -578,7 +615,7 @@ export class MimiumEditorElement extends HTMLElement {
       mimiumWebAudio.setupMimiumAudioWorklet(
         ctx,
         src,
-        MimiumProcessorUrl,
+        this.getResolvedProcessorModuleUrl(),
         this.getSetupOptions(),
       ),
       MimiumEditorElement.COMPILE_TIMEOUT_MS,
