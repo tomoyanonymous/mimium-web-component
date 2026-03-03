@@ -1,7 +1,5 @@
-import {
-  setupMimiumAudioWorklet,
-  MimiumProcessorNode,
-} from "@mimium/mimium-webaudio";
+import * as mimiumWebAudio from "@mimium/mimium-webaudio";
+import type { MimiumProcessorNode } from "@mimium/mimium-webaudio";
 import MimiumProcessorUrl from "../node_modules/@mimium/mimium-webaudio/dist/audioprocessor.mjs?url";
 import MimiumLogoUrl from "../mimium_logo_slant.svg?url";
 import * as monaco from "monaco-editor";
@@ -20,7 +18,7 @@ self.MonacoEnvironment = {
   getWorker(_moduleId: string, _label: string) {
     return new Worker(
       new URL("monaco-editor/esm/vs/editor/editor.worker.js", import.meta.url),
-      { type: "module" }
+      { type: "module" },
     );
   },
 };
@@ -203,6 +201,22 @@ mimium-editor textarea {
   border-top: 1px solid var(--mimium-border);
 }
 
+.mimium-error {
+  min-height: 18px;
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--mimium-danger);
+  background: rgba(244, 71, 71, 0.08);
+  border-top: 1px solid var(--mimium-border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mimium-error:empty {
+  display: none;
+}
+
 .mimium-status-dot {
   width: 6px;
   height: 6px;
@@ -265,9 +279,12 @@ export class MimiumEditorElement extends HTMLElement {
   private updateButton: HTMLButtonElement | null = null;
   private statusDot: HTMLDivElement | null = null;
   private statusText: HTMLSpanElement | null = null;
+  private errorText: HTMLDivElement | null = null;
   private labelEl: HTMLSpanElement | null = null;
   private _initialCode: string | null = null;
   private _isPlaying = false;
+  private runtimeErrorListener: ((ev: Event) => void) | null = null;
+  private static readonly COMPILE_TIMEOUT_MS = 30000;
 
   static get observedAttributes() {
     return ["src", "height", "theme", "readonly", "label"];
@@ -275,7 +292,6 @@ export class MimiumEditorElement extends HTMLElement {
 
   constructor() {
     super();
-    // Capture text content before render() clears it
     this._initialCode = this.textContent?.trim() || null;
   }
 
@@ -401,6 +417,9 @@ export class MimiumEditorElement extends HTMLElement {
 
     this.statusText = document.createElement("span");
     this.statusText.textContent = "Ready";
+    const errorText = document.createElement("div");
+    errorText.className = "mimium-error";
+    this.errorText = errorText;
 
     statusBar.appendChild(this.statusDot);
     statusBar.appendChild(this.statusText);
@@ -409,6 +428,7 @@ export class MimiumEditorElement extends HTMLElement {
     container.appendChild(header);
     container.appendChild(this.editorContainer);
     container.appendChild(statusBar);
+    container.appendChild(errorText);
 
     this.appendChild(container);
   }
@@ -438,7 +458,6 @@ export class MimiumEditorElement extends HTMLElement {
         horizontalScrollbarSize: 8,
       },
     });
-
   }
 
   private setStatus(text: string, playing: boolean) {
@@ -450,6 +469,111 @@ export class MimiumEditorElement extends HTMLElement {
     }
   }
 
+  private setError(message: string | null) {
+    if (!this.errorText) return;
+    this.errorText.textContent = message ?? "";
+  }
+
+  private withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number,
+    label: string,
+  ) {
+    return new Promise<T>((resolve, reject) => {
+      const timer = window.setTimeout(() => {
+        reject(
+          new Error(
+            `${label} timed out after ${timeoutMs}ms. No compile response from AudioWorkletProcessor.`,
+          ),
+        );
+      }, timeoutMs);
+
+      promise.then(
+        (value) => {
+          window.clearTimeout(timer);
+          resolve(value);
+        },
+        (error) => {
+          window.clearTimeout(timer);
+          reject(error);
+        },
+      );
+    });
+  }
+
+  private formatError(err: unknown): string {
+    if (err instanceof Error) return err.message;
+    return String(err);
+  }
+
+  private getSetupOptions() {
+    return {
+      libBaseUrl:
+        "https://raw.githubusercontent.com/mimium-org/mimium-rs/dev/lib/",
+      moduleBaseUrl: new URL(".", import.meta.url).toString(),
+    };
+  }
+
+  private async preloadLibCacheIfAvailable() {
+    const options = this.getSetupOptions();
+    const preload = (
+      mimiumWebAudio as unknown as {
+        preloadMimiumLibCache?: (opts: { libBaseUrl: string }) => Promise<void>;
+      }
+    ).preloadMimiumLibCache;
+
+    if (typeof preload === "function") {
+      await preload({
+        libBaseUrl: options.libBaseUrl,
+      });
+    }
+  }
+
+  private detachRuntimeErrorListener() {
+    if (this.mimiumNode && this.runtimeErrorListener) {
+      this.mimiumNode.removeEventListener(
+        "mimium-runtime-error",
+        this.runtimeErrorListener,
+      );
+    }
+    this.runtimeErrorListener = null;
+  }
+
+  private async createCompiledNode(
+    ctx: AudioContext,
+    src: string,
+  ): Promise<MimiumProcessorNode> {
+    await this.preloadLibCacheIfAvailable();
+
+    const node = await this.withTimeout(
+      mimiumWebAudio.setupMimiumAudioWorklet(
+        ctx,
+        src,
+        MimiumProcessorUrl,
+        this.getSetupOptions(),
+      ),
+      MimiumEditorElement.COMPILE_TIMEOUT_MS,
+      "mimium compile",
+    );
+
+    this.runtimeErrorListener = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ message: string }>).detail;
+      const message = detail?.message || "Unknown runtime error";
+      console.error("mimium runtime error:", message);
+      this.setStatus(`Runtime error: ${message}`, false);
+      this.setError(message);
+    };
+
+    node.addEventListener("mimium-runtime-error", this.runtimeErrorListener);
+    node.onprocessorerror = (ev) => {
+      console.error("processor error:", ev);
+      this.setStatus("Runtime error: Audio processor failed", false);
+      this.setError("Audio processor failed");
+    };
+
+    return node;
+  }
+
   /**
    * Play the current code
    */
@@ -459,18 +583,16 @@ export class MimiumEditorElement extends HTMLElement {
     const src = this.monacoEditor?.getValue() || "";
     if (!src.trim()) {
       this.setStatus("No source code", false);
+      this.setError("No source code");
       return;
     }
 
     try {
+      this.setError(null);
       this.setStatus("Starting...", false);
       const ctx = new AudioContext();
-      const mimiumNode = await setupMimiumAudioWorklet(
-        ctx,
-        src,
-        MimiumProcessorUrl
-      );
-
+      await ctx.resume();
+      const mimiumNode = await this.createCompiledNode(ctx, src);
       try {
         const usermedia = await navigator.mediaDevices.getUserMedia({
           audio: true,
@@ -492,10 +614,13 @@ export class MimiumEditorElement extends HTMLElement {
 
       if (this.updateButton) this.updateButton.disabled = false;
       this.setStatus("Playing", true);
+      this.setError(null);
 
       this.dispatchEvent(new CustomEvent("play", { detail: { src } }));
     } catch (e) {
-      this.setStatus(`Error: ${e}`, false);
+      const message = this.formatError(e);
+      this.setStatus(`Error: ${message}`, false);
+      this.setError(message);
       console.error("[mimium-editor] Play error:", e);
     }
   }
@@ -504,6 +629,8 @@ export class MimiumEditorElement extends HTMLElement {
    * Stop audio playback
    */
   async stopAudio() {
+    this.detachRuntimeErrorListener();
+    this.mimiumNode?.disconnect();
     if (this.audioContext) {
       await this.audioContext.close();
       this.audioContext = null;
@@ -520,11 +647,40 @@ export class MimiumEditorElement extends HTMLElement {
   /**
    * Send updated code to running audio processor
    */
-  updateCode() {
-    if (!this.mimiumNode) return;
+  async updateCode() {
+    if (!this.mimiumNode || !this.audioContext) return;
     const src = this.monacoEditor?.getValue() || "";
-    this.mimiumNode.port.postMessage({ type: "recompile", data: { src } });
-    this.setStatus("Code updated", true);
+    const currentNode = this.mimiumNode;
+    const currentRuntimeErrorListener = this.runtimeErrorListener;
+    this.setError(null);
+    this.setStatus("Updating...", true);
+
+    try {
+      const nextNode = await this.createCompiledNode(this.audioContext, src);
+
+      if (this.microphone && nextNode.numberOfInputs > 0) {
+        this.microphone.connect(nextNode);
+      }
+      nextNode.connect(this.audioContext.destination);
+
+      if (currentRuntimeErrorListener) {
+        currentNode.removeEventListener(
+          "mimium-runtime-error",
+          currentRuntimeErrorListener,
+        );
+      }
+      currentNode.onprocessorerror = null;
+      currentNode.disconnect();
+      this.mimiumNode = nextNode;
+      this.setStatus("Code updated", true);
+      this.setError(null);
+    } catch (e) {
+      const message = this.formatError(e);
+      this.setStatus(`Update error: ${message}`, true);
+      this.setError(message);
+      console.error("[mimium-editor] Update error:", e);
+      return;
+    }
 
     this.dispatchEvent(new CustomEvent("update", { detail: { src } }));
   }

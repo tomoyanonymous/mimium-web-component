@@ -1,6 +1,6 @@
 {
   "name": "mimium-web-component",
-  "version": "4.0.0",
+  "version": "4.0.2",
   "description": "mimium editor web component",
   "type": "module",
   "main": "./dist/mimium-web-component.js",
@@ -32,7 +32,7 @@
     "monaco-editor": "^0.55.1"
   },
   "devDependencies": {
-    "@mimium/mimium-webaudio": "4.0.0-alpha.1",
+    "@mimium/mimium-webaudio": "4.0.0-alpha.7",
     "@playwright/test": "^1.58.2",
     "@types/audioworklet": "^0.0.65",
     "@types/node": "^22.19.13",
