@@ -1,4 +1,3 @@
-import * as mimiumWebAudio from "@mimium/mimium-webaudio";
 import type { MimiumProcessorNode } from "@mimium/mimium-webaudio";
 import MimiumProcessorUrl from "../node_modules/@mimium/mimium-webaudio/dist/audioprocessor.mjs?url";
 import MimiumLogoUrl from "../mimium_logo_slant.svg?url";
@@ -269,6 +268,15 @@ function injectComponentStyles() {
 }
 
 export class MimiumEditorElement extends HTMLElement {
+  private mimiumWebAudioModule: {
+    setupMimiumAudioWorklet: (
+      ctx: AudioContext,
+      src: string,
+      processorUrl: string,
+      options?: { libBaseUrl?: string; moduleBaseUrl?: string },
+    ) => Promise<MimiumProcessorNode>;
+    preloadMimiumLibCache?: (opts: { libBaseUrl: string }) => Promise<void>;
+  } | null = null;
   private editorContainer: HTMLDivElement | null = null;
   private monacoEditor: monaco.editor.IStandaloneCodeEditor | null = null;
   private audioContext: AudioContext | null = null;
@@ -514,13 +522,33 @@ export class MimiumEditorElement extends HTMLElement {
     };
   }
 
+  private async loadMimiumWebAudioModule() {
+    if (this.mimiumWebAudioModule) return this.mimiumWebAudioModule;
+
+    const nativeTextEncoder = globalThis.TextEncoder;
+    const nativeTextDecoder = globalThis.TextDecoder;
+
+    const loaded = (await import("@mimium/mimium-webaudio")) as {
+      setupMimiumAudioWorklet: (
+        ctx: AudioContext,
+        src: string,
+        processorUrl: string,
+        options?: { libBaseUrl?: string; moduleBaseUrl?: string },
+      ) => Promise<MimiumProcessorNode>;
+      preloadMimiumLibCache?: (opts: { libBaseUrl: string }) => Promise<void>;
+    };
+
+    if (nativeTextEncoder) globalThis.TextEncoder = nativeTextEncoder;
+    if (nativeTextDecoder) globalThis.TextDecoder = nativeTextDecoder;
+
+    this.mimiumWebAudioModule = loaded;
+    return loaded;
+  }
+
   private async preloadLibCacheIfAvailable() {
     const options = this.getSetupOptions();
-    const preload = (
-      mimiumWebAudio as unknown as {
-        preloadMimiumLibCache?: (opts: { libBaseUrl: string }) => Promise<void>;
-      }
-    ).preloadMimiumLibCache;
+    const mimiumWebAudio = await this.loadMimiumWebAudioModule();
+    const preload = mimiumWebAudio.preloadMimiumLibCache;
 
     if (typeof preload === "function") {
       await preload({
@@ -544,6 +572,7 @@ export class MimiumEditorElement extends HTMLElement {
     src: string,
   ): Promise<MimiumProcessorNode> {
     await this.preloadLibCacheIfAvailable();
+    const mimiumWebAudio = await this.loadMimiumWebAudioModule();
 
     const node = await this.withTimeout(
       mimiumWebAudio.setupMimiumAudioWorklet(
