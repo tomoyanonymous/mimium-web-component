@@ -7,8 +7,13 @@ import {
   MIMIUM_LANGUAGE_ID,
 } from "./mimium-language.js";
 
-const MIMIUM_ASSET_BASE_URL =
-  `${(import.meta.env.BASE_URL || "/").replace(/\/?$/, "/")}assets/`;
+const mimiumAssetBasePath = import.meta.env.DEV
+  ? `${(import.meta.env.BASE_URL || "/").replace(/\/?$/, "/")}assets/`
+  : "./assets/";
+const MIMIUM_ASSET_BASE_URL = new URL(
+  mimiumAssetBasePath,
+  import.meta.url,
+).toString();
 const MIMIUM_PROCESSOR_URL = `${MIMIUM_ASSET_BASE_URL}audioprocessor.mjs`;
 
 // Monaco Editor worker setup
@@ -272,6 +277,7 @@ function injectComponentStyles() {
 
 export class MimiumEditorElement extends HTMLElement {
   private resolvedProcessorModuleUrl: string | null = null;
+  private resolvedProcessorModuleBlobUrl: string | null = null;
   private mimiumWebAudioModule: {
     setupMimiumAudioWorklet: (
       ctx: AudioContext,
@@ -316,6 +322,10 @@ export class MimiumEditorElement extends HTMLElement {
 
   disconnectedCallback() {
     this.stopAudio();
+    if (this.resolvedProcessorModuleBlobUrl) {
+      URL.revokeObjectURL(this.resolvedProcessorModuleBlobUrl);
+      this.resolvedProcessorModuleBlobUrl = null;
+    }
     this.resolvedProcessorModuleUrl = null;
     if (this.monacoEditor) {
       this.monacoEditor.dispose();
@@ -529,6 +539,26 @@ export class MimiumEditorElement extends HTMLElement {
 
   private getResolvedProcessorModuleUrl(): string {
     if (this.resolvedProcessorModuleUrl) return this.resolvedProcessorModuleUrl;
+
+    // Some bundlers inline worklet scripts as data: URLs. In that case, rewrite
+    // relative imports to absolute asset URLs and serve via blob: so imports resolve.
+    if (MIMIUM_PROCESSOR_URL.startsWith("data:text/javascript")) {
+      const commaIndex = MIMIUM_PROCESSOR_URL.indexOf(",");
+      const encoded =
+        commaIndex >= 0 ? MIMIUM_PROCESSOR_URL.slice(commaIndex + 1) : "";
+      const source = atob(encoded);
+      const rewritten = source.replace(
+        /(import\s+(?:[^"']*from\s+)?["'])\.\/([^"']+)(["'])/g,
+        `$1${MIMIUM_ASSET_BASE_URL}$2$3`,
+      );
+
+      const blob = new Blob([rewritten], { type: "text/javascript" });
+      const blobUrl = URL.createObjectURL(blob);
+      this.resolvedProcessorModuleBlobUrl = blobUrl;
+      this.resolvedProcessorModuleUrl = blobUrl;
+      return blobUrl;
+    }
+
     this.resolvedProcessorModuleUrl = MIMIUM_PROCESSOR_URL;
     return MIMIUM_PROCESSOR_URL;
   }
